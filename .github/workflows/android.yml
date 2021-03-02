@@ -19,3 +19,5 @@ jobs:
           java-version: 1.8
       - name: Build
         run: ./gradlew assemble
+      - name: Publish library
+        run: ./gradlew library:publish -PGITHUB_USER=${{ secrets.GITHUB_USER }} -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
