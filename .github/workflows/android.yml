@@ -20,4 +20,4 @@ jobs:
       - name: Build
         run: ./gradlew assemble
       - name: Publish library
-        run: ./gradlew cieid-android-sdk:publish -PGITHUB_USER=${{ secrets.GITHUB_USER }} -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew cieidsdk:publish -PGITHUB_USER=${{ secrets.GITHUB_USER }} -PGITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
