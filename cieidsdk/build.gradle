@@ -57,3 +57,5 @@ dependencies {
 
 }
 
+apply from: "$rootProject.projectDir/gradle/publish_github_package.gradle"
+
