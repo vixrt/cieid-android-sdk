@@ -4,6 +4,7 @@ package it.ipzs.cieidsdk.nfc
 import java.io.ByteArrayInputStream
 import java.lang.IllegalStateException
 import java.util.*
+import kotlin.math.pow
 
 internal class Asn1TagParseException(message : String) : IllegalStateException(message)
 
@@ -72,7 +73,7 @@ constructor(objects: Array<Any>) {
 
         @Throws(Exception::class)
         fun unsignedToBytes32(x: Int): Long {
-            return if (x > 0) x.toLong() else Math.pow(2.0, 32.0).toLong() + x
+            return if (x > 0) x.toLong() else 2.0.pow(32.0).toLong() + x
         }
 
 

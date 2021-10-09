@@ -18,7 +18,7 @@ internal object NFCCore {
     /**
     Check if device has NFC supports
      */
-    fun hasDeviceNFC(): Boolean = nfcAdapter != null
+    private fun hasDeviceNFC(): Boolean = nfcAdapter != null
 
     /**
      *  Check if NFC is enabled on Device

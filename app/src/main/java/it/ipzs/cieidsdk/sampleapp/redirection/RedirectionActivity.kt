@@ -18,8 +18,8 @@ class RedirectionActivity : AppCompatActivity() {
 
     val appPackageName = "it.ipzs.cieid"
     val className = "it.ipzs.cieid.BaseActivity"
-    val URL = "URL"
-    val ERROR = "ERROR"
+    private val URL = "URL"
+    private val ERROR = "ERROR"
     //COLLAUDO
     //val appPackageName = "it.ipzs.cieid.collaudo"
 

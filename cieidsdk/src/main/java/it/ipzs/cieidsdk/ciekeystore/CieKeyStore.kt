@@ -10,8 +10,8 @@ import java.util.*
 
 internal class CieKeyStore : KeyStoreSpi() {
 
-    val ALIAS = "CertAutenticazione"
-    var USERS_CERTS_ALIASES: ArrayList<String> = arrayListOf()
+    private val ALIAS = "CertAutenticazione"
+    private var USERS_CERTS_ALIASES: ArrayList<String> = arrayListOf()
 
     init {
         USERS_CERTS_ALIASES.add(ALIAS)

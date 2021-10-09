@@ -18,7 +18,7 @@ internal interface IdpService {
 
     companion object {
 
-        val generaCodice = "generaCodice"
-        val authnRequest = "authnRequest"
+        const val generaCodice = "generaCodice"
+        const val authnRequest = "authnRequest"
     }
 }

@@ -1,6 +1,5 @@
 package it.ipzs.cieidsdk.ciekeystore
 
-import android.util.Log
 import it.ipzs.cieidsdk.common.CieIDSdk
 import java.security.AlgorithmParameters
 import java.security.Key

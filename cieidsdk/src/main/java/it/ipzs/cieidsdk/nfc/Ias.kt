@@ -10,16 +10,16 @@ import it.ipzs.cieidsdk.nfc.algorithms.RSA
 import it.ipzs.cieidsdk.nfc.algorithms.Sha256
 import it.ipzs.cieidsdk.nfc.extensions.hexStringToByteArray
 import it.ipzs.cieidsdk.util.CieIDSdkLogger
-import it.ipzs.cieidsdk.nfc.ApduResponse.SwError.*
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.experimental.or
+import kotlin.math.min
 
 
 /**
  * Classe per la gestione delle funzionalità di autenticazione
  */
-internal class Ias constructor(val isoDep: IsoDep) {
+internal class Ias constructor(private val isoDep: IsoDep) {
 
     internal class InternalAuthenticationException(message : String) : IllegalArgumentException(message)
     internal class ReadPublicKeyException : Throwable()
@@ -565,7 +565,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
         0x81.toByte()
     )
     private val defPubExp = byteArrayOf(0x00, 0x01, 0x00, 0x01)
-    val IAS_AID = byteArrayOf(
+    private val IAS_AID = byteArrayOf(
         0xA0.toByte(),
         0x00,
         0x00,
@@ -586,7 +586,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
 
         internal var seq: ByteArray = byteArrayOf()
 
-        protected fun unsignedToBytes(b: Byte): Int {
+        private fun unsignedToBytes(b: Byte): Int {
             return b.toInt() and 0xFF
         }
     }
@@ -632,7 +632,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
 
 
     @Throws(Exception::class)
-    fun sign(dataToSign: ByteArray): ByteArray? {
+    fun sign(dataToSign: ByteArray): ByteArray {
         rlSign.lock()
         CieIDSdkLogger.log("sign()")
         val setKey = byteArrayOf(0x00, 0x22, 0x41, 0xA4.toByte())
@@ -659,7 +659,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
         }
         val verifyPIN = byteArrayOf(0x00, 0x20, 0x00, CIE_PIN_ID)
         val response = sendApduSM(verifyPIN, pin.toByteArray(), null)
-        val nt = AppUtil.bytesToHex(response.swByte)
+        val nt = AppUtil.bytesToHex(response.swShort)
         return when {
             nt.equals("9000", ignoreCase = true) -> 3
             nt.equals("63c2", ignoreCase = true) -> 2
@@ -777,9 +777,9 @@ internal class Ias constructor(val isoDep: IsoDep) {
         val intAuth = byteArrayOf(0x00, 0x22, 0x41, 0xa4.toByte())
         val val82 = byteArrayOf(0x82.toByte())
         val pKdScheme = byteArrayOf(0x9b.toByte())
-        val temp: ByteArray
 
-        temp = AppUtil.appendByteArray(AppUtil.asn1Tag(val82, 0x84), AppUtil.asn1Tag(pKdScheme, 0x80))
+        val temp: ByteArray =
+            AppUtil.appendByteArray(AppUtil.asn1Tag(val82, 0x84), AppUtil.asn1Tag(pKdScheme, 0x80))
         sendApduSM(intAuth, temp, null)
         var rndIFD = byteArrayOf()
         rndIFD = AppUtil.getRandomByte(rndIFD, 8)
@@ -791,7 +791,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
         val rsaIntAuthKey = RSA(dappModule, dappPubKey)
         intAuthResp = rsaIntAuthKey.encrypt(AppUtil.getSub(resp.response, 8, resp.response.size - 8))
 
-        if (java.lang.Byte.compare(intAuthResp[0], 0x6a.toByte()) != 0)
+        if (intAuthResp[0].compareTo(0x6a.toByte()) != 0)
             throw InternalAuthenticationException("Errore nell'autenticazione del chip- Byte.compare(intAuthResp[0], (byte)0x6a) != 0")
 
         val PRND2 = AppUtil.getSub(intAuthResp, 1, intAuthResp.size - 32 - 2)
@@ -811,7 +811,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
             throw InternalAuthenticationException("Errore nell'autenticazione del chip (calcHashIFD,hashICC)")
 
 
-        if (java.lang.Byte.compare(intAuthResp[intAuthResp.size - 1], 0xbc.toByte()) != 0)
+        if (intAuthResp[intAuthResp.size - 1].compareTo(0xbc.toByte()) != 0)
             throw InternalAuthenticationException("Errore nell'autenticazione del chip AppUtil.byteCompare(intAuthResp[intAuthResp.length - 1],0xcb")
 
         val ba888 = AppUtil.getRight(challengeResp.response, 4)
@@ -842,7 +842,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
         var dh_prKey: ByteArray = byteArrayOf()
         do {
             dh_prKey = AppUtil.getRandomByte(dh_prKey, dh_q.size)
-        } while (dh_q[0].compareTo(dh_prKey[0]) < 0)
+        } while (dh_q[0] < dh_prKey[0])
 
         val dhg = dh_g.clone()
         val rsa = RSA(dh_p, dh_prKey)
@@ -1287,21 +1287,21 @@ internal class Ias constructor(val isoDep: IsoDep) {
         while (true) {
             ////CieIDSdkLogger.logI("SDK-CIE[CPP]  dentro while(true) C++ content.size():%d",content.size());
             val readFile = byteArrayOf(0x00, 0xb0.toByte(), HIBYTE(cnt), LOBYTE(cnt))
-            val response = sendApduSM(readFile, byteArrayOf(), byteArrayOf(chunk.toByte()))
+            val response: ApduResponse = sendApduSM(readFile, byteArrayOf(), byteArrayOf(chunk.toByte()))
             var chn = response.response
-            if (java.lang.Byte.compare((response.swInt shr 8).toByte(), 0x6c.toByte()) == 0) {
+            if ((response.swInt shr 8).toByte().compareTo(0x6c.toByte()) == 0) {
                 val le = AppUtil.unsignedToBytes(response.swInt and 0xff)
                 val respApdu = sendApduSM(readFile, byteArrayOf(), byteArrayOf(le))
                 chn = respApdu.response
             }
-            if (response.swShort == SW_NO_ERROR.code) {
+            if (response.swShort.contentEquals(SwErrorApdu.SW_NO_ERROR)) {
                 content = AppUtil.appendByteArray(content, chn)
                 cnt += chn.size
                 chunk = 256
             } else {
-                if (response.swShort == SW_END_OF_FILE.code) {
+                if (response.swShort.contentEquals(SwErrorApdu.SW_END_OF_FILE)) {
                     content = AppUtil.appendByteArray(content, chn)
-                } else if (response.swShort == SW_WRONG_P1P2.code) {
+                } else if (!(response.swShort.contentEquals(SwErrorApdu.SW_WRONG_P1P2))) {
                     return content
                 }
                 break
@@ -1333,14 +1333,15 @@ internal class Ias constructor(val isoDep: IsoDep) {
                 val respApdu = sendApdu(readFile, byteArrayOf(), byteArrayOf(le))
                 chn = respApdu.response
             }
-            if (response.swShort == SW_NO_ERROR.code) {
+
+            if (response.swShort.contentEquals(SwErrorApdu.SW_NO_ERROR)) {
                 content = AppUtil.appendByteArray(content, chn)
                 cnt += chn.size
                 chunk = 256
             } else {
-                if (response.swShort == SW_END_OF_FILE.code) {
+                if (response.swShort.contentEquals(SwErrorApdu.SW_END_OF_FILE)) {
                     content = AppUtil.appendByteArray(content, chn)
-                } else if (response.swShort == SW_WRONG_P1P2.code) {
+                } else if (!response.swShort.contentEquals(SwErrorApdu.SW_WRONG_P1P2)) {
                     return content
                 }
                 break
@@ -1372,7 +1373,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
             val cla = head[0]
             while (true) {
                 apduSm = byteArrayOf()
-                val s = AppUtil.getSub(data, i, Math.min(data.size - i, 0xE7))
+                val s = AppUtil.getSub(data, i, min(data.size - i, 0xE7))
                 i += s.size
                 if (i != data.size)
                     head[0] = (cla or 0x10)
@@ -1413,10 +1414,10 @@ internal class Ias constructor(val isoDep: IsoDep) {
             val cla = head[0]
             while (true) {
                 apdu = byteArrayOf()
-                val s = AppUtil.getSub(data, i, Math.min(data.size - i, 255))
+                val s = AppUtil.getSub(data, i, min(data.size - i, 255))
                 i += s.size
                 if (i != data.size)
-                    head[0] = (cla or 0x10).toByte()
+                    head[0] = (cla or 0x10)
                 else
                     head[0] = cla
                 apdu = AppUtil.appendByteArray(apdu, head)
@@ -1455,7 +1456,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
         var tmpIndex = 0
         var tmpSegno: Int
         for (i in argomenti.indices) {
-            if (Math.signum(argomenti[i].toFloat()) < 0) {
+            if (kotlin.math.sign(argomenti[i].toFloat()) < 0) {
                 tmpSegno = argomenti[i] and 0xFF
                 tmpIndex += tmpSegno
             } else
@@ -1541,7 +1542,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
                 if (resp[index].compareTo(0x08.toByte()) != 0)
                     throw ResponseSMException("Errore nella verifica del SM - lunghezza del MAC errata")
                 setIndex(index, 1)//index++;
-                if (!Arrays.equals(calcMac, AppUtil.getSub(resp, index, 8)))
+                if (!calcMac.contentEquals(AppUtil.getSub(resp, index, 8)))
                     throw ResponseSMException("Errore nella verifica del SM - MAC non corrispondente")
                 setIndex(index, 8)//index += 8;
                 continue
@@ -1564,8 +1565,8 @@ internal class Ias constructor(val isoDep: IsoDep) {
                     setIndex(index, resp[index + 1].toInt(), 2) //index += resp[index + 1] + 2;
                 }
                 continue
-            } else if (java.lang.Byte.compare(resp[index], 0x85.toByte()) == 0) {
-                if (java.lang.Byte.compare(resp[index + 1], 0x80.toByte()) > 0) {
+            } else if (resp[index].compareTo(0x85.toByte()) == 0) {
+                if (resp[index + 1].compareTo(0x80.toByte()) > 0) {
                     var lgn = 0
                     val llen = resp[index + 1] - 0x80
                     if (llen == 1)
@@ -1621,11 +1622,11 @@ internal class Ias constructor(val isoDep: IsoDep) {
                     elaboraResp = AppUtil.appendByteArray(elaboraResp, responseTmp.response)
                 }
             } else return if (AppUtil.byteArrayCompare(
-                    responseTmp.swByte,
+                    responseTmp.swShort,
                     byteArrayOf(0x90.toByte(), 0x00.toByte())
                 ) ||
-                AppUtil.byteArrayCompare(responseTmp.swByte, byteArrayOf(0x6b.toByte(), 0x00.toByte())) ||
-                AppUtil.byteArrayCompare(responseTmp.swByte, byteArrayOf(0x62.toByte(), 0x82.toByte()))
+                AppUtil.byteArrayCompare(responseTmp.swShort, byteArrayOf(0x6b.toByte(), 0x00.toByte())) ||
+                AppUtil.byteArrayCompare(responseTmp.swShort, byteArrayOf(0x62.toByte(), 0x82.toByte()))
             ) {
                 break
             } else
@@ -1680,7 +1681,7 @@ internal class Ias constructor(val isoDep: IsoDep) {
         val resp = ApduResponse(isoDep.transceive(apdu))
 
         CieIDSdkLogger.log("RESPONSE: " + AppUtil.bytesToHex(resp.response))
-        CieIDSdkLogger.log("SW: " + AppUtil.bytesToHex(resp.swByte))
+        CieIDSdkLogger.log("SW: " + AppUtil.bytesToHex(resp.swShort))
         return resp
     }
 

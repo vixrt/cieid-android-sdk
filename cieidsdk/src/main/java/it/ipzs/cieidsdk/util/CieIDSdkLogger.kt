@@ -7,7 +7,7 @@ internal class CieIDSdkLogger {
 
     companion object{
 
-        const val TAG : String = "CieIDSdkLogger"
+        private const val TAG : String = "CieIDSdkLogger"
 
         fun log(message : String){
             if(CieIDSdk.enableLog)

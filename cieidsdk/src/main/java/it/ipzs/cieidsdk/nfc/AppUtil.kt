@@ -1,6 +1,8 @@
 package it.ipzs.cieidsdk.nfc
 
 import java.security.SecureRandom
+import java.util.*
+import kotlin.math.sign
 
 /**
  * classe di utility
@@ -61,12 +63,12 @@ internal class AppUtil {
          * @param b secondo byte
          * @return true se sono uguali
          */
-        fun byteCompare(a: Byte, b: Byte): Boolean {
-            return if (java.lang.Byte.compare(a, b) == 0) true else false
+        private fun byteCompare(a: Byte, b: Byte): Boolean {
+            return a.compareTo(b) == 0
         }
 
         fun byteCompare(a: Int, b: Int): Int {
-            return java.lang.Byte.compare(a.toByte(), b.toByte())
+            return a.toByte().compareTo(b.toByte())
             //if( == 0) return true;
             //return false;
         }
@@ -208,7 +210,7 @@ internal class AppUtil {
         @Throws(Exception::class)
         fun getSub(array: ByteArray, start: Int, num: Int): ByteArray {
             var num = num
-            if (Math.signum(num.toFloat()) < 0)
+            if (sign(num.toFloat()) < 0)
                 num = num and 0xff
             val data = ByteArray(num)
             System.arraycopy(array, start, data, 0, data.size)
@@ -233,10 +235,10 @@ internal class AppUtil {
         @Throws(Exception::class)
         fun getIsoPad(data: ByteArray): ByteArray {
             val padLen: Int
-            if (data.size and 0x7 == 0)
-                padLen = data.size + 8
+            padLen = if (data.size and 0x7 == 0)
+                data.size + 8
             else
-                padLen = data.size - (data.size and 0x7) + 0x08
+                data.size - (data.size and 0x7) + 0x08
             val padData = ByteArray(padLen)
             System.arraycopy(data, 0, padData, 0, data.size)
             padData[data.size] = 0x80.toByte()
@@ -305,15 +307,14 @@ internal class AppUtil {
         fun bytesToHex(bytes: ByteArray): String {
             val sb = StringBuilder(bytes.size * 2)
             for (i in bytes.indices) {
-                sb.append(String.format("%02x", bytes[i]).toUpperCase())
+                sb.append(String.format("%02x", bytes[i]).uppercase(Locale.getDefault()))
             }
             return sb.toString()
         }
 
         @Throws(Exception::class)
         fun isoRemove(data: ByteArray): ByteArray {
-            var i: Int
-            i = data.size - 1
+            var i: Int = data.size - 1
             while (i >= 0) {
                 if (data[i] == 0x80.toByte())
                     break

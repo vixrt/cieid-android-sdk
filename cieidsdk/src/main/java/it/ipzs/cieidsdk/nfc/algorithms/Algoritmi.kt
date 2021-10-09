@@ -1,6 +1,5 @@
 package it.ipzs.cieidsdk.nfc.algorithms
 
-import it.ipzs.cieidsdk.nfc.AppUtil.Companion.getSub
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
