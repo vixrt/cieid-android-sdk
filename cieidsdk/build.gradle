@@ -63,3 +63,5 @@ dependencies {
     testImplementation 'io.kotlintest:kotlintest-runner-junit5:3.4.2'
 }
 
+apply from: "$rootProject.projectDir/gradle/publish_github_package.gradle"
+
