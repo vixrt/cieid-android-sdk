@@ -80,7 +80,7 @@ class RedirectionActivity : AppCompatActivity() {
         when (resultCode) {
             RESULT_OK -> {
                 val url = data?.getStringExtra(URL)
-                if (!TextUtils.isEmpty(url)) {
+                if (!TextUtils.isEmpty(url) && url != null) {
                     webView.loadUrl(url)
                 } else {
                     when (data?.getIntExtra(ERROR, 0)) {
